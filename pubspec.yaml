@@ -1,0 +1,31 @@
+name: localink
+description: "A new localink project."
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  pinput: ^4.0.0
+
+  cupertino_icons: ^1.0.8
+  google_fonts: ^8.0.2
+  flutter_native_splash: ^2.4.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+flutter:
+  assets:
+    - assets/icons.png
+    - assets/icons2.png
+
+  uses-material-design: true
