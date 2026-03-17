@@ -17,30 +17,42 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoader = false;
 
   @override
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // 1. RESPONSIVE & THEME DETECTION
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isTablet = screenWidth > 600;
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
+    // 2. DYNAMIC COLOR PALETTE
     const Color primaryColor = Color(0xFF2563EB);
-    const Color secondaryColor = Color(0xFF64748B);
-    const Color darkColor = Color(0xFF0F172A);
+    final Color textColor = isDarkMode ? Colors.white : const Color(0xFF0F172A);
+    final Color secondaryTextColor = isDarkMode ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final Color cardColor = isDarkMode ? const Color(0xFF1E293B) : Colors.white;
+    final Color scaffoldBg = isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final Color inputFillColor = isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
 
     return Scaffold(
-      backgroundColor: isTablet ? const Color(0xFFF8FAFC) : Colors.white,
+      // On mobile, use standard scaffold bg. On tablet, use a slightly different shade for depth.
+      backgroundColor: isTablet ? scaffoldBg : (isDarkMode ? const Color(0xFF0F172A) : Colors.white),
       body: Stack(
         children: [
-
-          // 1. DECORATIVE BACKGROUND (Only for Tablets)
+          // Decorative background elements for Tablet
           if (isTablet) ...[
             Positioned(
               top: -100,
               right: -100,
-              child: _buildBlurCircle(primaryColor.withOpacity(0.05), 300),
+              child: _buildBlurCircle(primaryColor.withOpacity(isDarkMode ? 0.08 : 0.05), 300),
             ),
             Positioned(
               bottom: -50,
               left: -50,
-              child: _buildBlurCircle(Colors.blue.withOpacity(0.05), 200),
+              child: _buildBlurCircle(Colors.blue.withOpacity(isDarkMode ? 0.08 : 0.05), 200),
             ),
           ],
 
@@ -57,16 +69,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   vertical: isTablet ? 56 : 40,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(isTablet ? 32 : 0),
                   boxShadow: isTablet
                       ? [
-                          BoxShadow(
-                            color: const Color(0xFF0F172A).withOpacity(0.06),
-                            blurRadius: 40,
-                            offset: const Offset(0, 20),
-                          ),
-                        ]
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.06),
+                      blurRadius: 40,
+                      offset: const Offset(0, 20),
+                    ),
+                  ]
                       : null,
                 ),
                 child: SafeArea(
@@ -78,8 +90,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         // --- BRANDING ---
                         Center(
-                          // child: _buildBranding(isTablet, primaryColor),
-                          child: const AppIcon(size: 120),
+                          child: AppIcon(
+                            size: isTablet ? 120 : 100,
+                            heroTag: 'app_logo',
+                          ),
                         ),
                         const SizedBox(height: 48),
 
@@ -89,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: isTablet ? 32 : 28,
                             fontWeight: FontWeight.w800,
-                            color: darkColor,
+                            color: textColor,
                             letterSpacing: -1,
                           ),
                         ),
@@ -98,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           "Enter your mobile number to connect with your local community.",
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: isTablet ? 16 : 15,
-                            color: secondaryColor,
+                            color: secondaryTextColor,
                             height: 1.6,
                             fontWeight: FontWeight.w500,
                           ),
@@ -106,22 +120,27 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 40),
 
                         // --- INPUT SECTION ---
-                        _buildInputLabel("MOBILE NUMBER"),
+                        _buildInputLabel("MOBILE NUMBER", secondaryTextColor),
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(10),
-                          ],
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 2,
-                            color: darkColor,
+                            color: textColor,
                           ),
-                          decoration: _buildInputDecoration(primaryColor),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(10),
+                          ],
+                          decoration: _buildInputDecoration(
+                              primaryColor,
+                              inputFillColor,
+                              textColor,
+                              secondaryTextColor
+                          ),
                           validator: (value) {
                             if (value == null || value.length < 10) {
                               return "Please enter a valid 10-digit number";
@@ -137,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 32),
 
                         // --- FOOTER ---
-                        _buildFooter(primaryColor, secondaryColor),
+                        _buildFooter(primaryColor, secondaryTextColor),
                       ],
                     ),
                   ),
@@ -158,52 +177,22 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildBranding(bool isTablet, Color primaryColor) {
-    return Hero(
-      tag: 'app_logo',
-      child: Container(
-        height: isTablet ? 90 : 80,
-        width: isTablet ? 90 : 80,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [primaryColor, primaryColor.withOpacity(0.8)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(isTablet ? 24 : 20),
-          boxShadow: [
-            BoxShadow(
-              color: primaryColor.withOpacity(0.25),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: const Icon(
-          Icons.share_location_rounded,
-          size: 38,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInputLabel(String label) {
+  Widget _buildInputLabel(String label, Color color) {
     return Text(
       label,
       style: GoogleFonts.plusJakartaSans(
         fontSize: 12,
         fontWeight: FontWeight.w800,
-        color: const Color(0xFF94A3B8), // Slate 400
+        color: color,
         letterSpacing: 1.2,
       ),
     );
   }
 
-  InputDecoration _buildInputDecoration(Color primaryColor) {
+  InputDecoration _buildInputDecoration(Color primary, Color fill, Color text, Color hint) {
     return InputDecoration(
       filled: true,
-      fillColor: const Color(0xFFF8FAFC),
+      fillColor: fill,
       prefixIcon: Container(
         padding: const EdgeInsets.only(left: 16, right: 12),
         child: Row(
@@ -216,18 +205,18 @@ class _LoginScreenState extends State<LoginScreen> {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF0F172A),
+                color: text,
               ),
             ),
             const SizedBox(width: 12),
-            Container(height: 24, width: 1.5, color: const Color(0xFFCBD5E1)),
+            Container(height: 24, width: 1.5, color: hint.withOpacity(0.3)),
           ],
         ),
       ),
       hintText: "00000 00000",
       hintStyle: GoogleFonts.plusJakartaSans(
         fontSize: 18,
-        color: const Color(0xFF94A3B8),
+        color: hint.withOpacity(0.5),
         letterSpacing: 2,
       ),
       contentPadding: const EdgeInsets.symmetric(vertical: 22, horizontal: 20),
@@ -237,11 +226,11 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
+        borderSide: BorderSide(color: hint.withOpacity(0.1), width: 1),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: primaryColor, width: 2),
+        borderSide: BorderSide(color: primary, width: 2),
       ),
       errorStyle: GoogleFonts.plusJakartaSans(
         fontWeight: FontWeight.w600,
@@ -251,8 +240,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildLoginButton(Color primaryColor) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+    return SizedBox(
       width: double.infinity,
       height: 64,
       child: ElevatedButton(
@@ -267,21 +255,21 @@ class _LoginScreenState extends State<LoginScreen> {
         onPressed: _isLoader ? null : _handleLogin,
         child: _isLoader
             ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 3,
-                ),
-              )
+          height: 24,
+          width: 24,
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 3,
+          ),
+        )
             : Text(
-                "Send Verification Code",
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
-                ),
-              ),
+          "Send Verification Code",
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2,
+          ),
+        ),
       ),
     );
   }
@@ -289,15 +277,17 @@ class _LoginScreenState extends State<LoginScreen> {
   void _handleLogin() {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoader = true);
-      if (mounted) {
-        setState(() => _isLoader = false);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OtpScreen(phoneNumber: _phoneController.text),
-          ),
-        );
-      }
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          setState(() => _isLoader = false);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OtpScreen(phoneNumber: _phoneController.text),
+            ),
+          );
+        }
+      });
     }
   }
 

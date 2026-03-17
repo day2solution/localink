@@ -3,192 +3,312 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:localink/marketplace/seller_profile_screen.dart';
 
 class ProductDetailScreen extends StatelessWidget {
-  final String name;
+  final String title;
   final String price;
-  final String dist;
-  final String img;
+  final String distance;
+  final String imageUrl;
 
   const ProductDetailScreen({
     super.key,
-    required this.name,
+    required this.title,
     required this.price,
-    required this.dist,
-    required this.img
+    required this.distance,
+    required this.imageUrl,
   });
 
   @override
   Widget build(BuildContext context) {
-    // 1. Detect Screen Type
-    final bool isTablet = MediaQuery.of(context).size.width > 600;
-    const Color primaryBlue = Color(0xFF2563EB);
-    const Color textDark = Color(0xFF0F172A);
+    // 1. RESPONSIVE & THEME DETECTION
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isTablet = screenWidth > 600;
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    final Color textColor = isDarkMode ? Colors.white : const Color(0xFF0F172A);
+    final Color cardColor = isDarkMode ? const Color(0xFF1E293B) : Colors.white;
+    final Color scaffoldBg = isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final Color borderColor = isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          // 2. ADAPTIVE CONTENT
-          isTablet
-              ? _buildTabletLayout(context, primaryBlue, textDark)
-              : _buildMobileLayout(context, primaryBlue, textDark),
+      backgroundColor: scaffoldBg,
+      body: isTablet
+          ? _buildTabletLayout(context, isDarkMode, textColor, cardColor, borderColor)
+          : _buildMobileLayout(context, isDarkMode, textColor, cardColor, borderColor),
 
-          // 3. TOP NAVIGATION (Always visible)
-          _buildTopNav(context, isTablet),
+      // Fixed bottom bar for both views
+      bottomSheet: _buildBottomAction(context, isDarkMode, cardColor, isTablet, screenWidth),
+    );
+  }
 
-          // 4. BOTTOM ACTION BAR (Mobile only - Tablet has it in sidebar)
-          if (!isTablet)
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: _buildBottomBar(primaryBlue, isTablet),
+  // --- MOBILE LAYOUT (Sliver Scroll) ---
+  Widget _buildMobileLayout(BuildContext context, bool isDarkMode, Color textColor, Color cardColor, Color borderColor) {
+    return CustomScrollView(
+      slivers: [
+        SliverAppBar(
+          expandedHeight: 400,
+          pinned: true,
+          leading: _buildBackButton(context),
+          flexibleSpace: FlexibleSpaceBar(
+            background: Image.network(imageUrl, fit: BoxFit.cover),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: _buildProductInfo(context, isDarkMode, textColor, cardColor, borderColor, false),
+        ),
+      ],
+    );
+  }
+
+  // --- TABLET LAYOUT (Split View) ---
+  Widget _buildTabletLayout(BuildContext context, bool isDarkMode, Color textColor, Color cardColor, Color borderColor) {
+    return Stack(
+      children: [
+        Row(
+          children: [
+            // Left Side: Large Image
+            Expanded(
+              flex: 5,
+              child: Image.network(imageUrl, fit: BoxFit.cover, height: double.infinity),
             ),
-        ],
+            // Right Side: Content Area
+            Expanded(
+              flex: 4,
+              child: Container(
+                color: cardColor,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
+                  child: _buildProductInfo(context, isDarkMode, textColor, cardColor, borderColor, true),
+                ),
+              ),
+            ),
+          ],
+        ),
+        Positioned(top: 40, left: 20, child: _buildBackButton(context)),
+      ],
+    );
+  }
+
+  // --- REUSABLE COMPONENTS ---
+
+  Widget _buildBackButton(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: CircleAvatar(
+        backgroundColor: Colors.black26,
+        child: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
     );
   }
 
-  // --- MOBILE LAYOUT (Original Scroll View) ---
-  Widget _buildMobileLayout(BuildContext context, Color primary, Color textDark) {
-    return SingleChildScrollView(
+  Widget _buildProductInfo(BuildContext context, bool isDarkMode, Color textColor, Color cardColor, Color borderColor, bool isTablet) {
+    return Padding(
+      padding: EdgeInsets.all(isTablet ? 0 : 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildProductImage(400),
-          Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: _buildProductInfo(context, primary, textDark, false),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: isTablet ? 32 : 24,
+                    fontWeight: FontWeight.w800,
+                    color: textColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                price,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: isTablet ? 28 : 22,
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF2563EB),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 120),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(Icons.location_on, size: 18, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text(
+                "$distance away",
+                style: GoogleFonts.plusJakartaSans(color: Colors.grey, fontSize: 16),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+
+          // Seller Section Added Here
+          // _buildSellerSection(context, isDarkMode, textColor, cardColor, borderColor),
+          _buildSellerCard(context, isTablet, isDarkMode, textColor, cardColor, borderColor),
+
+          const SizedBox(height: 32),
+          Text(
+            "Description",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            "This is a high-quality item available in your local neighborhood. Well-maintained and ready for a new home. Sellers in your area are verified for your safety.",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              height: 1.6,
+              color: isDarkMode ? Colors.white70 : Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 120), // Bottom padding for button
         ],
       ),
     );
   }
 
-  // --- TABLET LAYOUT (Split Screen) ---
-  Widget _buildTabletLayout(BuildContext context, Color primary, Color textDark) {
-    return Row(
-      children: [
-        // Left Side: Large Image
-        Expanded(
-          flex: 5,
-          child: _buildProductImage(double.infinity),
+  Widget _buildBottomAction(BuildContext context, bool isDarkMode, Color cardColor, bool isTablet, double screenWidth) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 40 : 20,
+          vertical: 20
+      ),
+      width: isTablet ? screenWidth * 0.444 : double.infinity, // Match tablet side panel width
+      decoration: BoxDecoration(
+        color: cardColor,
+        border: Border(top: BorderSide(color: isDarkMode ? Colors.white10 : Colors.black12)),
+      ),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF2563EB),
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 0,
         ),
-        // Right Side: Scrollable Details
-        Expanded(
-          flex: 4,
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(40, 100, 40, 40),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildProductInfo(context, primary, textDark, true),
-                  const SizedBox(height: 40),
-                  // On Tablet, we put the action button inside the scroll view sidebar
-                  _buildBottomBar(primary, true),
-                ],
-              ),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SellerProfileScreen(),
             ),
+          );
+        },
+        child: Text(
+          "Chat with Seller",
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Colors.white,
           ),
         ),
-      ],
+      ),
     );
   }
 
-  // --- SHARED UI COMPONENTS ---
-
-  Widget _buildProductInfo(BuildContext context, Color primary, Color textDark, bool isTablet) {
+  Widget _buildSellerSection(BuildContext context, bool isDarkMode, Color textColor, Color cardColor, Color borderColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(price, style: GoogleFonts.plusJakartaSans(fontSize: isTablet ? 36 : 28, fontWeight: FontWeight.w900, color: primary)),
-            _buildDistanceBadge(dist, isTablet),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(name, style: GoogleFonts.plusJakartaSans(fontSize: isTablet ? 30 : 22, fontWeight: FontWeight.w800, color: textDark)),
-        const SizedBox(height: 8),
-        Text("Listed 2 hours ago in Greenwood Heights", style: TextStyle(color: Colors.grey[500], fontSize: isTablet ? 15 : 13)),
-        const Divider(height: 60),
-        Text("Seller Information", style: GoogleFonts.plusJakartaSans(fontSize: isTablet ? 18 : 16, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 16),
-        _buildSellerCard(context, isTablet),
-        const SizedBox(height: 32),
-        Text("Description", style: GoogleFonts.plusJakartaSans(fontSize: isTablet ? 18 : 16, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 12),
         Text(
-          "This $name is in excellent condition. Barely used for 3 months. Original packaging and bill available. Selling because I am moving out of the city.",
-          style: GoogleFonts.plusJakartaSans(fontSize: isTablet ? 17 : 15, color: Colors.grey[700], height: 1.6),
+          "Seller Information",
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: textColor,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cardColor,
+            border: Border(top: BorderSide(color: isDarkMode ? Colors.white10 : Colors.black12)),
+          ),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                radius: 25,
+                backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=seller'),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          "Aditya Varma",
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: textColor,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.verified, color: Colors.blue, size: 16),
+
+                      ],
+                    ),
+                    Text(
+                      "4.9 ★ (120+ ratings)",
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.white60 : Colors.grey[600],
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SellerProfileScreen(),
+                    ),
+                  );
+                },
+                child: Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey[400], size: 16),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
-
-  Widget _buildProductImage(double height) {
-    return Container(
-      height: height,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        image: DecorationImage(image: NetworkImage(img), fit: BoxFit.cover),
-      ),
-    );
-  }
-
-  Widget _buildTopNav(BuildContext context, bool isTablet) {
-    return Positioned(
-      top: isTablet ? 40 : 50,
-      left: 20,
-      right: 20,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _circleIcon(Icons.arrow_back_ios_new, isTablet, () => Navigator.pop(context)),
-          _circleIcon(Icons.favorite_border, isTablet, () {}),
-        ],
-      ),
-    );
-  }
-
-  Widget _circleIcon(IconData icon, bool isTablet, VoidCallback onTap) {
+  Widget _buildSellerCard(BuildContext context, bool isTablet, bool isDarkMode, Color textColor, Color cardColor, Color borderColor) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.all(isTablet ? 14 : 10),
-        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)]),
-        child: Icon(icon, size: isTablet ? 24 : 20, color: Colors.black),
+      onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SellerProfileScreen())
       ),
-    );
-  }
-
-  Widget _buildDistanceBadge(String dist, bool isTablet) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: isTablet ? 16 : 12, vertical: isTablet ? 8 : 6),
-      decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(10)),
-      child: Row(
-        children: [
-          Icon(Icons.location_on, size: isTablet ? 16 : 14, color: Colors.grey),
-          const SizedBox(width: 4),
-          Text(dist, style: TextStyle(fontWeight: FontWeight.bold, fontSize: isTablet ? 14 : 12)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSellerCard(BuildContext context, bool isTablet) {
-    return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SellerProfileScreen())),
       child: Container(
         padding: EdgeInsets.all(isTablet ? 20 : 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor, // Adapts to theme
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFF1F5F9)),
+          border: Border.all(color: borderColor), // Adapts to theme
+          boxShadow: isDarkMode ? null : [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
         ),
         child: Row(
           children: [
-            CircleAvatar(radius: isTablet ? 30 : 25, backgroundImage: const NetworkImage("https://i.pravatar.cc/150?u=seller")),
+            CircleAvatar(
+                radius: isTablet ? 30 : 25,
+                backgroundImage: const NetworkImage("https://i.pravatar.cc/150?u=seller")
+            ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -196,49 +316,35 @@ class ProductDetailScreen extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text("Aditya Varma", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: isTablet ? 17 : 15)),
+                      Text(
+                          "Aditya Varma",
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.bold,
+                            fontSize: isTablet ? 17 : 15,
+                            color: textColor, // Adapts to theme
+                          )
+                      ),
                       const SizedBox(width: 4),
                       Icon(Icons.verified, color: Colors.blue, size: isTablet ? 18 : 14),
                     ],
                   ),
-                  Text("Member since 2022 • 4.9 ★", style: TextStyle(color: Colors.grey[500], fontSize: isTablet ? 13 : 11)),
+                  Text(
+                      "Member since 2022 • 4.9 ★",
+                      style: TextStyle(
+                          color: isDarkMode ? Colors.white60 : Colors.grey[500], // Softer contrast in dark mode
+                          fontSize: isTablet ? 13 : 11
+                      )
+                  ),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey[400], size: 16),
+            Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: isDarkMode ? Colors.white38 : Colors.grey[400],
+                size: 16
+            ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildBottomBar(Color primary, bool isTablet) {
-    return Container(
-      padding: isTablet ? EdgeInsets.zero : const EdgeInsets.fromLTRB(24, 16, 24, 40),
-      decoration: BoxDecoration(
-        color: isTablet ? Colors.transparent : Colors.white,
-        boxShadow: isTablet ? [] : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20)],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(isTablet ? 18 : 16),
-            decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(16)),
-            child: Icon(Icons.share_outlined, size: isTablet ? 24 : 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primary,
-                padding: EdgeInsets.symmetric(vertical: isTablet ? 22 : 18),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              onPressed: () {},
-              child: Text("Message Seller", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: isTablet ? 16 : 14)),
-            ),
-          ),
-        ],
       ),
     );
   }

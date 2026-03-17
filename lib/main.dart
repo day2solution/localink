@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:localink/login/login_screen.dart';
 import 'package:localink/home/home_screen.dart';
 import 'package:localink/profile/profile_setup_screen.dart';
@@ -16,41 +15,33 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'LocaLink',
-      debugShowCheckedModeBanner: false,
 
-      // 1. GLOBAL THEME DATA
-      // Setting this here ensures all screens use your professional font automatically
+      // 1. THIS IS THE KEY: Set themeMode to system
+      themeMode: ThemeMode.system,
+
+      // 2. Define your Light Theme
       theme: ThemeData(
-        useMaterial3: true,
+        brightness: Brightness.light,
         primaryColor: const Color(0xFF2563EB),
         scaffoldBackgroundColor: Colors.white,
-        textTheme: GoogleFonts.plusJakartaSansTextTheme(
-          Theme.of(context).textTheme,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          iconTheme: IconThemeData(color: Color(0xFF0F172A)),
-        ),
+        // ... rest of your light theme
       ),
 
-      // 2. INITIAL ROUTE
-      // The app starts at the Splash Screen
-      initialRoute: '/',
+      // 3. Define your Dark Theme
+      // (If this is missing, Theme.of(context).brightness will always be Light)
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        primaryColor: const Color(0xFF2563EB),
+        scaffoldBackgroundColor: const Color(0xFF0F172A), // Dark Navy
+        // ... rest of your dark theme
+      ),
 
-      // 3. NAMED ROUTES TABLE
-      // This allows you to use Navigator.pushNamedAndRemoveUntil(context, '/login', ...)
+      initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
         '/profile-setup': (context) => const ProfileSetupScreen(),
-      },
-
-      // 4. FALLBACK (Optional)
-      // Handles cases where a route name might be misspelled
-      onUnknownRoute: (settings) {
-        return MaterialPageRoute(builder: (context) => const LoginScreen());
       },
     );
   }

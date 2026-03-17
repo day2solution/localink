@@ -1,34 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:localink/dogwalker/dog_walker_detail_screen.dart'; // Ensure this import exists
 
 class DogWalkerListScreen extends StatelessWidget {
   DogWalkerListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 1. Responsive Detection
+    // 1. RESPONSIVE & THEME DETECTION
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isTablet = screenWidth > 600;
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
+    // 2. DYNAMIC COLOR PALETTE
     const Color primaryBlue = Color(0xFF2563EB);
-    const Color textDark = Color(0xFF0F172A);
+    final Color textColor = isDarkMode ? Colors.white : const Color(0xFF0F172A);
+    final Color secondaryTextColor = isDarkMode ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final Color scaffoldBg = isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final Color cardColor = isDarkMode ? const Color(0xFF1E293B) : Colors.white;
+    final Color appBarBg = isDarkMode ? const Color(0xFF1E293B) : Colors.white;
+    final Color borderColor = isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: scaffoldBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: appBarBg,
         elevation: 0,
         centerTitle: isTablet,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: textDark, size: isTablet ? 24 : 20),
+          icon: Icon(Icons.arrow_back_ios_new, color: textColor, size: isTablet ? 24 : 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           "Dog Walkers Nearby",
           style: GoogleFonts.plusJakartaSans(
-            color: textDark,
+            color: textColor,
             fontWeight: FontWeight.w800,
-            fontSize: isTablet ? 24 : 18, // Scaled for tablet
+            fontSize: isTablet ? 24 : 18,
           ),
         ),
         actions: [
@@ -39,23 +47,25 @@ class DogWalkerListScreen extends StatelessWidget {
           if (isTablet) const SizedBox(width: 20),
         ],
       ),
-      // 2. Adaptive Layout
+      // 3. ADAPTIVE LAYOUT
       body: isTablet
           ? GridView.builder(
         padding: const EdgeInsets.all(24),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2, // 2 columns for tablet
+          crossAxisCount: 2,
           mainAxisSpacing: 20,
           crossAxisSpacing: 20,
-          mainAxisExtent: 220, // Prevents vertical stretching
+          mainAxisExtent: 220,
         ),
         itemCount: _dogWalkerData.length,
-        itemBuilder: (context, index) => _buildWalkerCard(context, index, isTablet),
+        itemBuilder: (context, index) => _buildWalkerCard(
+            context, index, isTablet, isDarkMode, cardColor, textColor, secondaryTextColor, borderColor),
       )
           : ListView.builder(
         padding: const EdgeInsets.all(20),
         itemCount: _dogWalkerData.length,
-        itemBuilder: (context, index) => _buildWalkerCard(context, index, isTablet),
+        itemBuilder: (context, index) => _buildWalkerCard(
+            context, index, isTablet, isDarkMode, cardColor, textColor, secondaryTextColor, borderColor),
       ),
     );
   }
@@ -94,114 +104,126 @@ class DogWalkerListScreen extends StatelessWidget {
     },
   ];
 
-  Widget _buildWalkerCard(BuildContext context, int index, bool isTablet) {
+  Widget _buildWalkerCard(BuildContext context, int index, bool isTablet, bool isDarkMode, Color bg, Color text,
+      Color subText, Color border) {
     final walker = _dogWalkerData[index];
-    return Container(
-      margin: EdgeInsets.only(bottom: isTablet ? 0 : 16),
-      padding: EdgeInsets.all(isTablet ? 20 : 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Profile Picture
-          ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: Image.network(
-              walker['img'],
-              height: isTablet ? 90 : 70,
-              width: isTablet ? 90 : 70,
-              fit: BoxFit.cover,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const DogWalkerDetailScreen()),
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: isTablet ? 0 : 16),
+        padding: EdgeInsets.all(isTablet ? 20 : 16),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: border),
+          boxShadow: isDarkMode
+              ? null
+              : [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Profile Picture
+            ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: Image.network(
+                walker['img'],
+                height: isTablet ? 90 : 70,
+                width: isTablet ? 90 : 70,
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        walker['name'],
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w800,
-                          fontSize: isTablet ? 18 : 16, // Scaled Font
-                          color: const Color(0xFF0F172A),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          walker['name'],
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w800,
+                            fontSize: isTablet ? 18 : 16,
+                            color: text,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    if (walker['isVerified'])
-                      Icon(Icons.verified, color: Colors.blue, size: isTablet ? 18 : 16),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  walker['bio'],
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: isTablet ? 14 : 12, // Scaled Font
-                    color: Colors.grey[600],
+                      if (walker['isVerified'])
+                        Icon(Icons.verified, color: Colors.blue, size: isTablet ? 18 : 16),
+                    ],
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Icon(Icons.star, color: Colors.orange, size: 14),
-                    const SizedBox(width: 4),
-                    Text(walker['rating'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: isTablet ? 15 : 13)),
-                    Text(" (${walker['reviews']})", style: TextStyle(color: Colors.grey, fontSize: isTablet ? 13 : 12)),
-                    const Spacer(),
-                    Text(
-                      walker['price'],
-                      style: TextStyle(
-                        color: const Color(0xFF2563EB),
-                        fontWeight: FontWeight.w900,
-                        fontSize: isTablet ? 18 : 15, // Scaled Font
-                      ),
+                  const SizedBox(height: 4),
+                  Text(
+                    walker['bio'],
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: isTablet ? 14 : 12,
+                      color: subText,
                     ),
-                  ],
-                ),
-                const Divider(height: 20),
-                Row(
-                  children: [
-                    Icon(Icons.pets, color: Colors.grey[400], size: 14),
-                    const SizedBox(width: 4),
-                    Text(walker['distance'], style: TextStyle(color: Colors.grey, fontSize: isTablet ? 13 : 12)),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        "ACTIVE",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.star, color: Colors.orange, size: 14),
+                      const SizedBox(width: 4),
+                      Text(walker['rating'],
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: isTablet ? 15 : 13, color: text)),
+                      Text(" (${walker['reviews']})", style: TextStyle(color: subText, fontSize: isTablet ? 13 : 12)),
+                      const Spacer(),
+                      Text(
+                        walker['price'],
                         style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                          fontSize: isTablet ? 12 : 10,
+                          color: const Color(0xFF2563EB),
+                          fontWeight: FontWeight.w900,
+                          fontSize: isTablet ? 18 : 15,
                         ),
                       ),
-                    ),
-                  ],
-                )
-              ],
+                    ],
+                  ),
+                  Divider(height: 20, color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0)),
+                  Row(
+                    children: [
+                      Icon(Icons.pets, color: subText.withOpacity(0.5), size: 14),
+                      const SizedBox(width: 4),
+                      Text(walker['distance'], style: TextStyle(color: subText, fontSize: isTablet ? 13 : 12)),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          "ACTIVE",
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                            fontSize: isTablet ? 12 : 10,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

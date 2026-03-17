@@ -15,11 +15,12 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   google_fonts: ^8.0.2
-  flutter_native_splash: ^2.4.7
+
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_native_splash: ^2.4.7
 
   flutter_lints: ^5.0.0
 
@@ -29,3 +30,11 @@ flutter:
     - assets/icons2.png
 
   uses-material-design: true
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/app_logo_final.png # Path to your logo
+  android_12:
+    image: assets/app_logo_final.png
+    color: "#ffffff"
+    icon_background_color: "#ffffff"
+  web: false

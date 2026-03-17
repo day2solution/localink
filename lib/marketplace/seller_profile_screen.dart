@@ -6,25 +6,36 @@ class SellerProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 1. THEME & RESPONSIVE DETECTION
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isTablet = screenWidth > 600;
+
+    // 2. DYNAMIC COLOR PALETTE
     const Color primaryBlue = Color(0xFF2563EB);
-    const Color textDark = Color(0xFF0F172A);
+    final Color textColor = isDarkMode ? Colors.white : const Color(0xFF0F172A);
+    final Color scaffoldBg = isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final Color cardColor = isDarkMode ? const Color(0xFF1E293B) : Colors.white;
+    final Color borderColor = isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0);
+    final Color subTextColor = isDarkMode ? const Color(0xFF94A3B8) : Colors.grey[600]!;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: scaffoldBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: cardColor,
         elevation: 0,
+        centerTitle: isTablet,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: textDark, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new, color: textColor, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.share_outlined, color: textDark),
+            icon: Icon(Icons.share_outlined, color: textColor),
             onPressed: () {},
           ),
           IconButton(
-            icon: const Icon(Icons.more_vert_rounded, color: textDark),
+            icon: Icon(Icons.more_vert_rounded, color: textColor),
             onPressed: () {},
           ),
         ],
@@ -32,15 +43,16 @@ class SellerProfileScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 1. SELLER HEADER CARD
+            // 1. SELLER HEADER CARD (Adaptive)
             Container(
-              color: Colors.white,
+              color: cardColor,
+              width: double.infinity,
               padding: const EdgeInsets.fromLTRB(24, 10, 24, 24),
               child: Column(
                 children: [
-                  const CircleAvatar(
-                    radius: 50,
-                    backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=seller'),
+                  CircleAvatar(
+                    radius: isTablet ? 70 : 50,
+                    backgroundImage: const NetworkImage('https://i.pravatar.cc/150?u=seller'),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -49,9 +61,9 @@ class SellerProfileScreen extends StatelessWidget {
                       Text(
                         "Aditya Varma",
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 22,
+                          fontSize: isTablet ? 28 : 22,
                           fontWeight: FontWeight.w800,
-                          color: textDark,
+                          color: textColor,
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -61,86 +73,93 @@ class SellerProfileScreen extends StatelessWidget {
                   Text(
                     "Greenwood Heights • Member since 2022",
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      color: Colors.grey[600],
+                      fontSize: isTablet ? 15 : 13,
+                      color: subTextColor,
                     ),
                   ),
                   const SizedBox(height: 24),
 
                   // Trust Stats Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildStatColumn("4.9", "Rating", Icons.star_rounded, Colors.orange),
-                      _buildStatDivider(),
-                      _buildStatColumn("12", "Sold", Icons.shopping_bag_outlined, primaryBlue),
-                      _buildStatDivider(),
-                      _buildStatColumn("98%", "Response", Icons.bolt_rounded, Colors.green),
-                    ],
+                  Container(
+                    constraints: const BoxConstraints(maxWidth: 500),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildStatColumn("4.9", "Rating", Icons.star_rounded, Colors.orange, textColor),
+                        _buildStatDivider(isDarkMode),
+                        _buildStatColumn("12", "Sold", Icons.shopping_bag_outlined, primaryBlue, textColor),
+                        _buildStatDivider(isDarkMode),
+                        _buildStatColumn("98%", "Response", Icons.bolt_rounded, Colors.green, textColor),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
 
             // 2. ACTIVE LISTINGS SECTION
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Active Listings",
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
+            Center(
+              child: Container(
+                constraints: BoxConstraints(maxWidth: isTablet ? 800 : double.infinity),
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Active Listings",
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: isTablet ? 22 : 18,
+                            fontWeight: FontWeight.w800,
+                            color: textColor,
+                          ),
                         ),
-                      ),
-                      Text(
-                        "4 items",
-                        style: TextStyle(color: Colors.grey[500], fontSize: 13),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Staggered-style Grid for Products
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      childAspectRatio: 0.8,
+                        Text(
+                          "4 items",
+                          style: TextStyle(color: subTextColor, fontSize: 13),
+                        ),
+                      ],
                     ),
-                    itemCount: 4,
-                    itemBuilder: (context, index) {
-                      return _buildSellerProductCard();
-                    },
-                  ),
-                ],
+                    const SizedBox(height: 16),
+
+                    // Grid for Products
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: screenWidth > 900 ? 3 : 2,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
+                        childAspectRatio: isTablet ? 0.85 : 0.8,
+                      ),
+                      itemCount: 4,
+                      itemBuilder: (context, index) {
+                        return _buildSellerProductCard(cardColor, textColor, borderColor, isDarkMode);
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomContactBar(primaryBlue),
+      bottomNavigationBar: _buildBottomContactBar(primaryBlue, cardColor, isDarkMode, isTablet),
     );
   }
 
   // --- UI HELPER WIDGETS ---
 
-  Widget _buildStatColumn(String val, String label, IconData icon, Color color) {
+  Widget _buildStatColumn(String val, String label, IconData icon, Color color, Color textColor) {
     return Column(
       children: [
         Row(
           children: [
             Icon(icon, size: 18, color: color),
             const SizedBox(width: 4),
-            Text(val, style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800)),
+            Text(val, style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: textColor)),
           ],
         ),
         const SizedBox(height: 2),
@@ -149,16 +168,23 @@ class SellerProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatDivider() {
-    return Container(height: 30, width: 1, color: Colors.grey[200]);
+  Widget _buildStatDivider(bool isDarkMode) {
+    return Container(
+        height: 30,
+        width: 1,
+        color: isDarkMode ? Colors.white10 : Colors.grey[200]
+    );
   }
 
-  Widget _buildSellerProductCard() {
+  Widget _buildSellerProductCard(Color bg, Color text, Color border, bool isDarkMode) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: bg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: border),
+        boxShadow: isDarkMode ? null : [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,8 +204,12 @@ class SellerProfileScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Ergonomic Chair", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                Text("₹4,500", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.blue[700])),
+                Text("Ergonomic Chair",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: text)
+                ),
+                Text("₹4,500",
+                    style: TextStyle(fontWeight: FontWeight.w900, color: Colors.blue[600])
+                ),
               ],
             ),
           )
@@ -188,22 +218,34 @@ class SellerProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomContactBar(Color primary) {
+  Widget _buildBottomContactBar(Color primary, Color bg, bool isDarkMode, bool isTablet) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, isTablet ? 32 : 40),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20)],
+        color: bg,
+        border: Border(top: BorderSide(color: isDarkMode ? Colors.white10 : Colors.black12)),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, -5)
+          )
+        ],
       ),
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: primary,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 0,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: primary,
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 0,
+          ),
+          onPressed: () {},
+          child: const Text("Message Aditya",
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)
+          ),
         ),
-        onPressed: () {},
-        child: const Text("Message Aditya", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
       ),
     );
   }

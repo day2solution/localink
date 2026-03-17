@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:localink/login/login_screen.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -11,24 +10,31 @@ class ProfileSetupScreen extends StatefulWidget {
 
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final Color primaryColor = const Color(0xFF2563EB);
-  final Color textDark = const Color(0xFF0F172A);
 
   @override
   Widget build(BuildContext context) {
-    // 1. Detect Screen Type
+    // 1. Detect Screen Type & Theme
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isTablet = screenWidth > 600;
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    // 2. Dynamic Theme Colors
+    final Color scaffoldBg = isDarkMode ? const Color(0xFF0F172A) : Colors.white;
+    final Color textColor = isDarkMode ? Colors.white : const Color(0xFF0F172A);
+    final Color inputFill = isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
+    final Color borderColor = isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0);
+    final Color subCardColor = isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: scaffoldBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: scaffoldBg,
         elevation: 0,
         centerTitle: isTablet,
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios_new,
-            color: textDark,
+            color: textColor,
             size: isTablet ? 24 : 20,
           ),
           onPressed: () => Navigator.pop(context),
@@ -36,15 +42,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         title: Text(
           "Set Up Profile",
           style: GoogleFonts.plusJakartaSans(
-            color: textDark,
+            color: textColor,
             fontWeight: FontWeight.w800,
             fontSize: isTablet ? 24 : 18,
           ),
         ),
-        // --- ADDED LOGOUT BUTTON ---
         actions: [
           IconButton(
-            onPressed: () => _showLogoutDialog(context, isTablet),
+            onPressed: () => _showLogoutDialog(context, isTablet, isDarkMode, scaffoldBg, textColor),
             icon: Icon(
               Icons.logout_rounded,
               color: Colors.redAccent,
@@ -56,9 +61,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         ],
       ),
       body: Center(
-        // Center content on tablets
         child: Container(
-          // 2. Limit width on tablets to prevent the form from stretching
           constraints: BoxConstraints(
             maxWidth: isTablet ? 550 : double.infinity,
           ),
@@ -83,7 +86,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           ),
                         ),
                         child: CircleAvatar(
-                          radius: isTablet ? 75 : 60, // Scaled for Tablet
+                          radius: isTablet ? 75 : 60,
+                          backgroundColor: inputFill,
                           backgroundImage: const NetworkImage(
                             'https://i.pravatar.cc/150?u=9',
                           ),
@@ -97,7 +101,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           decoration: BoxDecoration(
                             color: primaryColor,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 3),
+                            border: Border.all(color: scaffoldBg, width: 3),
                           ),
                           child: Icon(
                             Icons.camera_alt_rounded,
@@ -113,37 +117,46 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 const SizedBox(height: 40),
 
                 // --- FORM FIELDS ---
-                _buildFieldLabel("Full Name", isTablet),
-                _buildTextField("John Doe", Icons.person_outline, isTablet),
+                _buildFieldLabel("Full Name", isTablet, textColor),
+                _buildTextField("John Doe", Icons.person_outline, isTablet, isDarkMode, inputFill, textColor, borderColor),
 
                 const SizedBox(height: 20),
 
-                _buildFieldLabel("Bio / About You", isTablet),
+                _buildFieldLabel("Bio / About You", isTablet, textColor),
                 _buildTextField(
                   "Passionate about local gardening and dog walking!",
                   Icons.edit_note_rounded,
                   isTablet,
+                  isDarkMode,
+                  inputFill,
+                  textColor,
+                  borderColor,
                   maxLines: 3,
                 ),
 
                 const SizedBox(height: 20),
 
-                _buildFieldLabel("Home Neighborhood", isTablet),
+                _buildFieldLabel("Home Neighborhood", isTablet, textColor),
                 _buildTextField(
                   "Greenwood Heights, NY",
                   Icons.location_on_outlined,
                   isTablet,
+                  isDarkMode,
+                  inputFill,
+                  textColor,
+                  borderColor,
                   readOnly: true,
                 ),
 
                 const SizedBox(height: 32),
 
-                // --- TRUST & VERIFICATION CARD (Responsive) ---
+                // --- TRUST & VERIFICATION CARD ---
                 Container(
                   padding: EdgeInsets.all(isTablet ? 24 : 20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
+                    color: subCardColor,
                     borderRadius: BorderRadius.circular(20),
+                    border: isDarkMode ? Border.all(color: borderColor) : null,
                   ),
                   child: Row(
                     children: [
@@ -168,15 +181,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                               "Verified Neighbor",
                               style: GoogleFonts.plusJakartaSans(
                                 fontWeight: FontWeight.w800,
-                                fontSize: isTablet ? 18 : 15, // Scaled Font
-                                color: textDark,
+                                fontSize: isTablet ? 18 : 15,
+                                color: textColor,
                               ),
                             ),
                             Text(
                               "Verify your ID to increase community trust.",
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: isTablet ? 14 : 12, // Scaled Font
-                                color: Colors.grey[600],
+                                fontSize: isTablet ? 14 : 12,
+                                color: isDarkMode ? Colors.white60 : Colors.grey[600],
                               ),
                             ),
                           ],
@@ -184,7 +197,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       ),
                       Icon(
                         Icons.chevron_right,
-                        color: Colors.grey,
+                        color: isDarkMode ? Colors.white38 : Colors.grey,
                         size: isTablet ? 24 : 20,
                       ),
                     ],
@@ -196,7 +209,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 // --- SAVE BUTTON ---
                 SizedBox(
                   width: double.infinity,
-                  height: isTablet ? 70 : 60, // Taller button for Tablet
+                  height: isTablet ? 70 : 60,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
@@ -211,7 +224,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     child: Text(
                       "Save Profile",
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: isTablet ? 18 : 16, // Scaled Font
+                        fontSize: isTablet ? 18 : 16,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
@@ -229,7 +242,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   // --- HELPER UI WIDGETS ---
 
-  Widget _buildFieldLabel(String label, bool isTablet) {
+  Widget _buildFieldLabel(String label, bool isTablet, Color textColor) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
@@ -237,38 +250,44 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         style: GoogleFonts.plusJakartaSans(
           fontSize: isTablet ? 16 : 14,
           fontWeight: FontWeight.w700,
-          color: textDark,
+          color: textColor,
         ),
       ),
     );
   }
 
   Widget _buildTextField(
-    String hint,
-    IconData icon,
-    bool isTablet, {
-    int maxLines = 1,
-    bool readOnly = false,
-  }) {
+      String hint,
+      IconData icon,
+      bool isTablet,
+      bool isDarkMode,
+      Color fill,
+      Color textColor,
+      Color border, {
+        int maxLines = 1,
+        bool readOnly = false,
+      }) {
     return TextFormField(
       readOnly: readOnly,
       maxLines: maxLines,
       style: GoogleFonts.plusJakartaSans(
         fontSize: isTablet ? 18 : 16,
         fontWeight: FontWeight.w500,
+        color: textColor,
       ),
       decoration: InputDecoration(
         hintText: hint,
+        hintStyle: TextStyle(color: isDarkMode ? Colors.white38 : Colors.grey[400]),
         prefixIcon: Icon(
           icon,
-          color: Colors.grey[400],
+          color: isDarkMode ? Colors.white38 : Colors.grey[400],
           size: isTablet ? 26 : 22,
         ),
         filled: true,
-        fillColor: const Color(0xFFF8FAFC),
+        fillColor: fill,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          borderSide: BorderSide(color: border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -282,39 +301,38 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
   }
 
-  void _showLogoutDialog(BuildContext context, bool isTablet) {
+  void _showLogoutDialog(BuildContext context, bool isTablet, bool isDarkMode, Color bg, Color textColor) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: isDarkMode ? const Color(0xFF1E293B) : Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
           title: Text(
             "Logout",
-            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, color: textColor),
           ),
           content: Text(
             "Are you sure you want to log out of LocaLink?",
-            style: GoogleFonts.plusJakartaSans(fontSize: isTablet ? 16 : 14),
+            style: GoogleFonts.plusJakartaSans(fontSize: isTablet ? 16 : 14, color: isDarkMode ? Colors.white70 : Colors.black87),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
                 "Cancel",
-                style: GoogleFonts.plusJakartaSans(color: Colors.grey),
+                style: GoogleFonts.plusJakartaSans(color: isDarkMode ? Colors.white38 : Colors.grey),
               ),
             ),
             TextButton(
               onPressed: () {
-                // Remove all previous routes and go to LoginScreen
                 Navigator.pushNamedAndRemoveUntil(
                   context,
-                  '/login', // Ensure this route is defined in your main.dart
-                  (route) => false,
+                  '/login',
+                      (route) => false,
                 );
-
               },
               child: Text(
                 "Logout",
