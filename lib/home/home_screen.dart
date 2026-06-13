@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:localink/alert/alerts_screen.dart';
+import 'package:localink/api_service.dart';
 import 'package:localink/dogwalker/dog_walker_list_screen.dart';
 import 'package:localink/electrician/electrician_list_screen.dart';
 import 'package:localink/help/help_screen.dart';
 import 'package:localink/marketplace/marketplace_screen.dart';
 import 'package:localink/marketplace/product_detail_screen.dart';
+import 'package:localink/marketplace/promo.dart';
 import 'package:localink/popularservices/popular_services_screen.dart';
 import 'package:localink/profile/profile_setup_screen.dart';
 import 'package:localink/sell/sell_item_screen.dart';
 import 'package:localink/services/services_screen.dart';
 import 'package:localink/util/app-icon.dart';
+import 'package:logging/logging.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final String mobileNumber;
+
+  const HomeScreen({super.key, required this.mobileNumber});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -22,32 +27,113 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final PageController _promoController = PageController();
   String _selectedCategory = "All Items";
-
+  final ApiService _apiService = ApiService();
+  final Logger _log = Logger('HomeScreen');
+  late Future<List<dynamic>> _productsFuture;
+  late Future<List<Promo>> _promoFuture;
   // --- PROMO DATA ---
-  final List<Map<String, dynamic>> _promoData = [
-    {
-      "title": "Summer Block Party!",
-      "subtitle": "Saturday at 5PM • Central Park",
-      "tag": "COMMUNITY EVENT",
-      "icon": Icons.celebration_rounded,
-      "colors": [const Color(0xFF6366F1), const Color(0xFFA855F7)],
-    },
-    {
-      "title": "Safety Workshop",
-      "subtitle": "Learn home security • Monday 6PM",
-      "tag": "NEIGHBORHOOD WATCH",
-      "icon": Icons.shield_rounded,
-      "colors": [const Color(0xFFF59E0B), const Color(0xFFEF4444)],
-    },
-    {
-      "title": "Flash Sale Nearby",
-      "subtitle": "Up to 50% off on furniture items",
-      "tag": "MARKETPLACE",
-      "icon": Icons.shopping_bag_rounded,
-      "colors": [const Color(0xFF10B981), const Color(0xFF3B82F6)],
-    },
-  ];
+  // final List<Map<String, dynamic>> _promoData = [
+  //   {
+  //     "title": "Summer Block Party!",
+  //     "subtitle": "Saturday at 5PM • Central Park",
+  //     "tag": "COMMUNITY EVENT",
+  //     "icon": Icons.celebration_rounded,
+  //     "colors": [const Color(0xFF6366F1), const Color(0xFFA855F7)],
+  //   },
+  //   {
+  //     "title": "Safety Workshop",
+  //     "subtitle": "Learn home security • Monday 6PM",
+  //     "tag": "NEIGHBORHOOD WATCH",
+  //     "icon": Icons.shield_rounded,
+  //     "colors": [const Color(0xFFF59E0B), const Color(0xFFEF4444)],
+  //   },
+  //   {
+  //     "title": "Flash Sale Nearby",
+  //     "subtitle": "Up to 50% off on furniture items",
+  //     "tag": "MARKETPLACE",
+  //     "icon": Icons.shopping_bag_rounded,
+  //     "colors": [const Color(0xFF10B981), const Color(0xFF3B82F6)],
+  //   },
+  // ];
+  @override
+  void initState() {
+    super.initState();
+    _log.info("Initializing HomeScreen for: ${widget.mobileNumber}");
 
+    // 3. Initial API Call
+    _loadProducts();
+    _loadPromo();
+  }
+
+  // lib/api_service.dart
+
+
+// Helper to map backend string names (like "celebration") to Flutter IconData
+  IconData _getIconData(String name) {
+    switch (name) {
+      case 'celebration': return Icons.celebration_rounded;
+      case 'shield': return Icons.shield_rounded;
+      case 'shopping': return Icons.shopping_bag_rounded;
+      default: return Icons.info_outline;
+    }
+  }
+
+  void _loadProducts() {
+    _log.info("Requesting marketplace items for category: $_selectedCategory");
+
+    setState(() {
+      _productsFuture = _apiService
+          .fetchMarketplaceItems(_selectedCategory)
+          .catchError((Object error, StackTrace stackTrace) {
+
+        _log.severe(
+          "Exception caught in _loadProducts for category $_selectedCategory: $error",
+          error,
+          stackTrace,
+        );
+        throw error;
+      });
+    });
+  }
+void _loadPromo(){
+    _log.info("Requesting marketplace _loadPromo");
+    setState(() {
+      _promoFuture = _apiService.fetchPromos().catchError((Object error, StackTrace stackTrace) {
+        _log.severe(
+          "Exception caught in _loadPromo : $error",
+          error,
+          stackTrace,
+        );
+        throw error;
+      });
+    });
+
+}
+  // Helper method to show the error
+  void _showErrorSnackBar(String message) {
+    // Clean the message (remove "Exception: " prefix if present)
+    final cleanMessage = message.replaceAll('Exception:', '').trim();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white),
+            const SizedBox(width: 10),
+            Expanded(child: Text(cleanMessage)),
+          ],
+        ),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        action: SnackBarAction(
+          label: "RETRY",
+          textColor: Colors.white,
+          onPressed: _loadProducts,
+        ),
+      ),
+    );
+  }
   @override
   Widget build(BuildContext context) {
     // 1. RESPONSIVE & THEME DETECTION
@@ -185,31 +271,78 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           const SliverToBoxAdapter(child: SizedBox(height: 15)),
-
           // PRODUCT GRID
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: isTablet ? 4 : 2,
-                mainAxisSpacing: 15,
-                crossAxisSpacing: 15,
-                mainAxisExtent: isTablet ? 320 : 280,
-              ),
-              delegate: SliverChildListDelegate([
-                _buildProductCard("MacBook Pro 2021", "₹75,000", "0.2 km", "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
-                _buildProductCard("Ergonomic Chair", "₹4,500", "1.5 km", "https://images.unsplash.com/photo-1592078615290-033ee584e267?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
-                _buildProductCard("iPhone 13 Pro", "₹62,000", "0.8 km", "https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
-                _buildProductCard("Mechanical Keyboard", "₹2,200", "2.1 km", "https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
-                _buildProductCard("Coffee Espresso Machine", "₹8,900", "1.2 km", "https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
-                _buildProductCard("Wooden Dining Table", "₹12,000", "3.5 km", "https://images.unsplash.com/photo-1577140917170-285929fb55b7?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
-                // _buildProductCard("Mountain Bike", "₹15,500", "0.5 km", "https://images.unsplash.com/photo-1532298229144-0ee0c57515c1?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
-                _buildProductCard("Sony Headphones", "₹18,000", "1.1 km", "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
-                _buildProductCard("Indoor Plant Set", "₹950", "0.3 km", "https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
-                _buildProductCard("Electric Kettle", "₹1,200", "1.8 km", "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
-              ]),
-            ),
+          FutureBuilder<List<dynamic>>(
+            future: _productsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(40.0), child: CircularProgressIndicator(color: primaryColor))));
+              }
+              if (snapshot.hasError) {
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.cloud_off, size: 48, color: Colors.grey),
+                        const SizedBox(height: 10),
+                        Text("Marketplace temporarily unavailable", style: GoogleFonts.plusJakartaSans(color: textColor, fontWeight: FontWeight.w600)),
+                        TextButton(onPressed: _loadProducts, child: const Text("RETRY"))
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              final products = snapshot.data ?? [];
+              if (products.isEmpty) {
+                return SliverToBoxAdapter(child: Center(child: Padding(padding: const EdgeInsets.all(40.0), child: Text("No items found", style: TextStyle(color: secondaryTextColor)))));
+              }
+
+              return SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: isTablet ? 4 : 2, mainAxisSpacing: 15, crossAxisSpacing: 15, mainAxisExtent: isTablet ? 320 : 280,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                      final p = products[index];
+                      return _buildProductCard(
+                        p['name'] ?? "Unknown", "₹${p['price']}", p['distance'] ?? "Nearby",
+                        p['imageUrl'] ?? "https://via.placeholder.com/150",
+                        isTablet, isDarkMode, cardColor, textColor, secondaryTextColor,
+                      );
+                    },
+                    childCount: products.length,
+                  ),
+                ),
+              );
+            },
           ),
+          // PRODUCT GRID
+          // SliverPadding(
+          //   padding: const EdgeInsets.symmetric(horizontal: 20),
+          //   sliver: SliverGrid(
+          //     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          //       crossAxisCount: isTablet ? 4 : 2,
+          //       mainAxisSpacing: 15,
+          //       crossAxisSpacing: 15,
+          //       mainAxisExtent: isTablet ? 320 : 280,
+          //     ),
+          //     delegate: SliverChildListDelegate([
+          //       _buildProductCard("MacBook Pro 2021", "₹75,000", "0.2 km", "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
+          //       _buildProductCard("Ergonomic Chair", "₹4,500", "1.5 km", "https://images.unsplash.com/photo-1592078615290-033ee584e267?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
+          //       _buildProductCard("iPhone 13 Pro", "₹62,000", "0.8 km", "https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
+          //       _buildProductCard("Mechanical Keyboard", "₹2,200", "2.1 km", "https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
+          //       _buildProductCard("Coffee Espresso Machine", "₹8,900", "1.2 km", "https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
+          //       _buildProductCard("Wooden Dining Table", "₹12,000", "3.5 km", "https://images.unsplash.com/photo-1577140917170-285929fb55b7?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
+          //       _buildProductCard("Sony Headphones", "₹18,000", "1.1 km", "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
+          //       _buildProductCard("Indoor Plant Set", "₹950", "0.3 km", "https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
+          //       _buildProductCard("Electric Kettle", "₹1,200", "1.8 km", "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400", isTablet, isDarkMode, cardColor, textColor, secondaryTextColor),
+          //     ]),
+          //   ),
+          // ),
 
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
@@ -513,39 +646,147 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildAttractivePromoCarousel(bool isTablet, bool isDarkMode) {
-    return SizedBox(
-      height: isTablet ? 240 : 180,
-      child: PageView.builder(
-        controller: _promoController,
-        itemCount: _promoData.length,
-        itemBuilder: (context, index) {
-          final data = _promoData[index];
+    return FutureBuilder<List<Promo>>(
+      future: _promoFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            height: isTablet ? 200 : 160,
+            margin: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              gradient: LinearGradient(colors: data['colors'], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              color: isDarkMode ? Colors.white10 : Colors.black12,
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: Stack(
-              children: [
-                Positioned(right: -20, bottom: -20, child: Icon(data['icon'], size: 120, color: Colors.white.withOpacity(0.2))),
-                Padding(
-                  padding: const EdgeInsets.all(25),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(10)), child: Text(data['tag'], style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
-                      const Spacer(),
-                      Text(data['title'], style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: isTablet ? 24 : 20, fontWeight: FontWeight.w900)),
-                      Text(data['subtitle'], style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: isTablet ? 16 : 12)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
           );
-        },
-      ),
+        }
+
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final List<Promo> promos = snapshot.data!;
+
+        return Column(
+          children: [
+            SizedBox(
+              height: isTablet ? 200 : 160,
+              child: PageView.builder(
+                controller: _promoController,
+                itemCount: promos.length,
+                itemBuilder: (context, index) {
+                  final promo = promos[index];
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        colors: promo.colors,
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: promo.colors[0].withOpacity(0.3),
+                          blurRadius: 1,
+                          offset: const Offset(0, 6),
+                        )
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          right: -20,
+                          bottom: -20,
+                          child: Icon(
+                            promo.icon,
+                            size: isTablet ? 150 : 120,
+                            color: Colors.white.withOpacity(0.15),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  promo.tag.toUpperCase(),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                promo.title,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontSize: isTablet ? 24 : 20,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                promo.subtitle,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: isTablet ? 16 : 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            // --- CAROUSEL INDICATOR ---
+            const SizedBox(height: 8),
+            AnimatedBuilder(
+              animation: _promoController,
+              builder: (context, child) {
+                // Determine current page index safely
+                int currentPage = 0;
+                if (_promoController.hasClients) {
+                  currentPage = _promoController.page?.round() ?? 0;
+                }
+
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(promos.length, (index) {
+                    bool isActive = currentPage == index;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      height: 8,
+                      width: isActive ? 24 : 8, // Expansion effect for active dot
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? (isDarkMode ? Colors.white : const Color(0xFF2563EB))
+                            : (isDarkMode ? Colors.white24 : Colors.black12),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    );
+                  }),
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

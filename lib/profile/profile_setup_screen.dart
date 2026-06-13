@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -327,12 +328,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               ),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/login',
-                      (route) => false,
-                );
+              onPressed: () async {
+                // 1. Get SharedPreferences instance
+                // Logout Action
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.clear(); // Clears token and mobile number
+
+                if (context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                }
               },
               child: Text(
                 "Logout",

@@ -3,8 +3,12 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:localink/api_service.dart';
+import 'package:localink/home/home_screen.dart';
 import 'package:localink/login/login_screen.dart';
+// import 'package:localink/login/login_screen.dart';
 import 'package:localink/util/app-icon.dart';
+import 'package:logging/logging.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -17,7 +21,7 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
-
+  final Logger _log = Logger('SplashScreen');
   @override
   void initState() {
     super.initState();
@@ -32,14 +36,32 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     // Navigate to Home after 3 seconds
+    // Inside SplashScreen State (usually initState)
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
+        // ONLY navigate if the splash screen is the one actually visible
+        if (ModalRoute.of(context)?.isCurrent ?? false) {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
       }
     });
+  }
+
+  checkTokenAndNavigate() async{
+    final ApiService apiService = ApiService();
+    await apiService.getMobileFromToken().then((mobileNumber) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(mobileNumber: mobileNumber),
+        ),
+        (route) => false,
+      );
+    }).catchError((error) {
+         _log.severe("Error checking token: $error");
+    });
+
+
   }
 
   @override

@@ -53,17 +53,17 @@ class AppIcon extends StatelessWidget {
               Color(0xFF7C3AED), // Premium Purple
             ],
           ),
-          boxShadow: showShadow
-              ? [
-            BoxShadow(
-              color: const Color(0xFF2563EB).withOpacity(0.25),
-              // Shadow depth scales with device type
-              blurRadius: isTablet ? effectiveSize * 0.25 : effectiveSize * 0.2,
-              offset: Offset(0, effectiveSize * 0.1),
-              spreadRadius: isTablet ? 2 : 0,
-            ),
-          ]
-              : null,
+          // boxShadow: showShadow
+          //     ? [
+          //   BoxShadow(
+          //     color: const Color(0xFF2563EB).withOpacity(0.25),
+          //     // Shadow depth scales with device type
+          //     blurRadius: isTablet ? effectiveSize * 0.25 : effectiveSize * 0.2,
+          //     offset: Offset(0, effectiveSize * 0.1),
+          //     spreadRadius: isTablet ? 2 : 0,
+          //   ),
+          // ]
+          //     : null,
         ),
         child: Stack(
           alignment: Alignment.center,

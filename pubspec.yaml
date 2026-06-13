@@ -12,9 +12,13 @@ dependencies:
   flutter:
     sdk: flutter
   pinput: ^4.0.0
-
   cupertino_icons: ^1.0.8
   google_fonts: ^8.0.2
+  http: ^1.1.0
+  shared_preferences: ^2.2.2
+  logging: ^1.2.0
+  geolocator: ^14.0.2
+  geocoding: ^4.0.0
 
 
 dev_dependencies:
