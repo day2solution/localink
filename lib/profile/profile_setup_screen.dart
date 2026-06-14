@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:localink/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
@@ -11,6 +15,155 @@ class ProfileSetupScreen extends StatefulWidget {
 
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final Color primaryColor = const Color(0xFF2563EB);
+  final ApiService _apiService = ApiService();
+
+// 1. Define Controllers
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _bioController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+
+  // 2. Loading State
+  bool _isSaving = false;
+  bool _isLoading = true;
+  bool _isImageUploading = false;
+  String? _mobileNumber;
+  String? _profileImageUrl;
+  File? _pickedImage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final mobile = await _apiService.getMobileFromToken();
+      final user = await _apiService.fetchUserByMobile(mobile);
+      setState(() {
+        _mobileNumber = mobile;
+        _nameController.text = user.fullName ?? "";
+        _bioController.text = user.bio ?? "";
+        _locationController.text = user.address ?? "Greenwood Heights, NY";
+        _profileImageUrl = user.profilePictureUrl;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error loading profile: $e")),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    if (_mobileNumber == null) return;
+
+    setState(() => _isSaving = true);
+
+    try {
+      final userData = {
+        'mobileNumber': _mobileNumber,
+        'fullName': _nameController.text,
+        'bio': _bioController.text,
+        'address': _locationController.text,
+      };
+
+      debugPrint("Saving Profile Data: $userData");
+
+      await _apiService.updateUserProfile(userData);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Profile updated successfully!")),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to update profile: $e")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: source,
+      imageQuality: 50, // Compress for faster upload
+    );
+
+    if (image != null) {
+      File file = File(image.path);
+      setState(() {
+        _pickedImage = file;
+      });
+      _uploadImage(file);
+    }
+  }
+
+  Future<void> _uploadImage(File file) async {
+    if (_mobileNumber == null) return;
+
+    setState(() => _isImageUploading = true);
+
+    try {
+      final newUrl = await _apiService.uploadProfilePicture(_mobileNumber!, file);
+      setState(() {
+        _profileImageUrl = newUrl;
+        _isImageUploading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Profile picture updated!")),
+        );
+      }
+    } catch (e) {
+      setState(() => _isImageUploading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to upload image: $e")),
+        );
+      }
+    }
+  }
+
+  void _showImageSourceActionSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera),
+              title: const Text('Camera'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,8 +214,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: Center(
-        child: Container(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Center(
+              child: Container(
           constraints: BoxConstraints(
             maxWidth: isTablet ? 550 : double.infinity,
           ),
@@ -89,25 +244,33 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         child: CircleAvatar(
                           radius: isTablet ? 75 : 60,
                           backgroundColor: inputFill,
-                          backgroundImage: const NetworkImage(
-                            'https://i.pravatar.cc/150?u=9',
-                          ),
+                          backgroundImage: _pickedImage != null
+                              ? FileImage(_pickedImage!)
+                              : (_profileImageUrl != null && _profileImageUrl!.isNotEmpty
+                                  ? NetworkImage(_profileImageUrl!)
+                                  : const NetworkImage('https://i.pravatar.cc/150?u=9')) as ImageProvider,
+                          child: _isImageUploading
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : null,
                         ),
                       ),
                       Positioned(
                         bottom: 0,
                         right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: primaryColor,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: scaffoldBg, width: 3),
-                          ),
-                          child: Icon(
-                            Icons.camera_alt_rounded,
-                            color: Colors.white,
-                            size: isTablet ? 24 : 20,
+                        child: GestureDetector(
+                          onTap: () => _showImageSourceActionSheet(context),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: primaryColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: scaffoldBg, width: 3),
+                            ),
+                            child: Icon(
+                              Icons.camera_alt_rounded,
+                              color: Colors.white,
+                              size: isTablet ? 24 : 20,
+                            ),
                           ),
                         ),
                       ),
@@ -119,7 +282,16 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
                 // --- FORM FIELDS ---
                 _buildFieldLabel("Full Name", isTablet, textColor),
-                _buildTextField("John Doe", Icons.person_outline, isTablet, isDarkMode, inputFill, textColor, borderColor),
+                _buildTextField(
+                  "John Doe",
+                  Icons.person_outline,
+                  isTablet,
+                  isDarkMode,
+                  inputFill,
+                  textColor,
+                  borderColor,
+                  controller: _nameController,
+                ),
 
                 const SizedBox(height: 20),
 
@@ -132,6 +304,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   inputFill,
                   textColor,
                   borderColor,
+                  controller: _bioController,
                   maxLines: 3,
                 ),
 
@@ -146,6 +319,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   inputFill,
                   textColor,
                   borderColor,
+                  controller: _locationController,
                   readOnly: true,
                 ),
 
@@ -219,17 +393,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: Text(
-                      "Save Profile",
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: isTablet ? 18 : 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
+                    onPressed: _isSaving ? null : _saveProfile,
+                    child: _isSaving
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : Text(
+                            "Save Profile",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: isTablet ? 18 : 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -265,10 +439,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       Color fill,
       Color textColor,
       Color border, {
+        TextEditingController? controller,
         int maxLines = 1,
         bool readOnly = false,
       }) {
     return TextFormField(
+      controller: controller,
       readOnly: readOnly,
       maxLines: maxLines,
       style: GoogleFonts.plusJakartaSans(

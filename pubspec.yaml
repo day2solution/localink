@@ -19,6 +19,7 @@ dependencies:
   logging: ^1.2.0
   geolocator: ^14.0.2
   geocoding: ^4.0.0
+  image_picker: ^1.2.2
 
 
 dev_dependencies:

@@ -108,10 +108,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks[0];
         setState(() {
-          _addressMessage =
-              "${place.street}, ${place.locality}, ${place.administrativeArea}, ${place.country}";
+          _addressMessage = "${place.street}, ${place.locality}, ${place.administrativeArea}, ${place.country}";
         });
-        _log.info("Address: ${_addressMessage}");
+        _log.info("Address 1: $_addressMessage");
 
         String streetName = place.street ?? "";
 
@@ -124,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() {
           _addressMessage = "$streetName, ${place.locality}, ${place.country}";
         });
-        _log.info("Address: ${_addressMessage}");
+        _log.info("Address: $_addressMessage");
       }
     } catch (e) {
       setState(() {
@@ -569,7 +568,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
           ),
         ),
-        Text(_locationMessage),
       ],
     );
   }

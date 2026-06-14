@@ -187,7 +187,81 @@ class ApiService {
     }
   }
 
-  // --- 5. GET MOBILE FROM TOKEN ---
+  // --- 5. UPDATE USER PROFILE ---
+  Future<User> updateUserProfile(Map<String, dynamic> userData) async {
+    try {
+      final url = Uri.parse("$baseUrl/users/update/${userData['mobileNumber']}");
+      _log.info("Updating user profile with data: $userData");
+
+      final response = await http
+          .put(
+            url,
+            headers: await _getHeaders(requiresAuth: true),
+            body: jsonEncode(userData),
+          )
+          .timeout(_timeoutDuration);
+
+      final Map<String, dynamic> jsonMap = _handleResponse(response);
+
+      final apiResponse = ApiResponse<User>.fromJson(
+        jsonMap,
+        (data) => User.fromJson(data as Map<String, dynamic>),
+      );
+
+      if (apiResponse.status == "success" && apiResponse.data != null) {
+        return apiResponse.data!;
+      } else {
+        throw Exception(apiResponse.description ?? "Failed to update profile");
+      }
+    } on TimeoutException {
+      throw Exception("Connection timed out while updating profile.");
+    } catch (e) {
+      _log.severe("Error updating profile: $e");
+      rethrow;
+    }
+  }
+
+  // --- 6. UPLOAD PROFILE PICTURE ---
+  Future<String> uploadProfilePicture(String mobileNumber, File imageFile) async {
+    try {
+      final url = Uri.parse("$baseUrl/users/$mobileNumber/profile-picture");
+      _log.info("Uploading profile picture for: $mobileNumber");
+
+      var request = http.MultipartRequest('POST', url);
+
+      // Add Headers
+      request.headers.addAll(await _getHeaders(requiresAuth: true));
+
+      // Add File
+      request.files.add(await http.MultipartFile.fromPath(
+        'file',
+        imageFile.path,
+      ));
+
+      final streamedResponse = await request.send().timeout(_timeoutDuration);
+      final response = await http.Response.fromStream(streamedResponse);
+
+      final Map<String, dynamic> jsonMap = _handleResponse(response);
+
+      final apiResponse = ApiResponse<String>.fromJson(
+        jsonMap,
+        (data) => data.toString(),
+      );
+
+      if (apiResponse.status == "success" && apiResponse.data != null) {
+        return apiResponse.data!; // Returns the new image URL
+      } else {
+        throw Exception(apiResponse.description ?? "Failed to upload image");
+      }
+    } on TimeoutException {
+      throw Exception("Connection timed out while uploading image.");
+    } catch (e) {
+      _log.severe("Error uploading image: $e");
+      rethrow;
+    }
+  }
+
+  // --- 7. GET MOBILE FROM TOKEN ---
   Future<String> getMobileFromToken() async {
     try {
       final url = Uri.parse("$baseUrl/users/mobile");
